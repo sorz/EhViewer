@@ -24,7 +24,7 @@ import kotlinx.serialization.Serializable
 object GalleryPageApiParser {
     private val PATTERN_IMAGE_URL = Regex("<img[^>]*src=\"([^\"]+)\" style")
     private val PATTERN_SKIP_HATH_KEY = Regex("onclick=\"return nl\\('([^)]+)'\\)")
-    private val PATTERN_ORIGIN_IMAGE_URL = Regex("<a href=\"([^\"]+)fullimg.php([^\"]+)\">")
+    private val PATTERN_ORIGIN_IMAGE_URL = Regex("<a href=\"([^\"]+)fullimg([^\"]+)\">")
 
     fun parse(body: String): Result {
         runCatching { body.parseAs<Error>() }.onSuccess { throw ParseException(it.error, body) }
@@ -32,11 +32,11 @@ object GalleryPageApiParser {
         val imageUrl = PATTERN_IMAGE_URL.find(res.imageUrl)?.run {
             groupValues[1].trim().unescapeXml()
         }
-        val skipHathKey = PATTERN_SKIP_HATH_KEY.find(res.skipHathKey)?.run {
+        val skipHathKey = PATTERN_SKIP_HATH_KEY.find(res.skipHathKeyAndOriginImageUrl)?.run {
             groupValues[1].trim().unescapeXml()
         }
-        val originImageUrl = PATTERN_ORIGIN_IMAGE_URL.find(res.originImageUrl)?.run {
-            groupValues[1].unescapeXml() + "fullimg.php" + groupValues[2].unescapeXml()
+        val originImageUrl = PATTERN_ORIGIN_IMAGE_URL.find(res.skipHathKeyAndOriginImageUrl)?.run {
+            groupValues[1].unescapeXml() + "fullimg" + groupValues[2].unescapeXml()
         }
         if (!imageUrl.isNullOrEmpty()) {
             return Result(imageUrl, skipHathKey, originImageUrl)
@@ -50,9 +50,7 @@ object GalleryPageApiParser {
         @SerialName("i3")
         val imageUrl: String,
         @SerialName("i6")
-        val skipHathKey: String,
-        @SerialName("i7")
-        val originImageUrl: String,
+        val skipHathKeyAndOriginImageUrl: String,
     )
 
     class Result(val imageUrl: String, val skipHathKey: String?, val originImageUrl: String?)
